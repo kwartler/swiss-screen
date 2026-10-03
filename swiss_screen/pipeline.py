@@ -16,7 +16,7 @@ import os
 import sys
 
 from . import config, store
-from .detector import classify
+from .detector import LLM_FAILURES, classify
 from .fetch import fetch
 from .geocode import ensure_coords
 from .report import render_report
@@ -54,7 +54,7 @@ def main(argv=None):
 
     if args.cache is None:
         args.cache = MOCK_CACHE if args.source == "mock" else DEFAULT_CACHE
-    use_llm = not args.no_llm
+    use_llm = not args.no_llm and bool(os.environ.get("OPENROUTER_API_KEY"))
     if args.cantons:
         cantons = [c.strip().upper() for c in args.cantons.split(",") if c.strip()]
     elif args.all_cantons:
@@ -77,13 +77,17 @@ def main(argv=None):
             fetched += 1
             h = store.content_hash(listing)
             cached = cache.get(listing["listing_id"])
-            if cached and cached.get("content_hash") == h:
+            llm_pending = use_llm and not cached.get("llm_ok") if cached else False
+            if cached and cached.get("content_hash") == h and not llm_pending:
                 cached["last_seen"] = run_ts
                 continue
             det = classify(listing, use_llm=use_llm)
             if store.upsert(cache, listing, det, run_ts):
                 new_count += 1
             processed += 1
+            if processed % 25 == 0:
+                # Checkpoint so a timeout never discards paid LLM work.
+                store.save_cache(args.cache, cache)
 
     store.save_cache(args.cache, cache)
 
@@ -109,6 +113,8 @@ def main(argv=None):
     print(f"scanned (new/changed): {processed}")
     print(f"brand new     : {new_count}")
     print(f"eligible      : {len(eligible)}")
+    if use_llm:
+        print(f"llm failures  : {len(LLM_FAILURES)}")
     print(f"report        : {args.out}")
     print(f"csv           : {args.csv}")
 

@@ -53,7 +53,7 @@ jobs:
           echo "Using source: $SRC, all cantons: $ALL"
 
       - name: Run screen
-        timeout-minutes: 60
+        timeout-minutes: 120
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

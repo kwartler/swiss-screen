@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import unicodedata
 import urllib.request
 
@@ -127,11 +128,16 @@ LLM_SYSTEM = (
 )
 
 
+DEFAULT_LLM_MODEL = "anthropic/claude-sonnet-5.5"
+LLM_FAILURES = []
+
+
 def classify_llm(title, description, canton, municipality):
     key = os.environ.get("OPENROUTER_API_KEY", "")
     if not key:
         return None
-    model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6")
+    # `or`, not a get() default: Actions passes an unset repo variable as "".
+    model = os.environ.get("OPENROUTER_MODEL") or DEFAULT_LLM_MODEL
     user = (
         f"Canton: {canton}. Municipality: {municipality}.\n"
         f"Title: {title}\n\nDescription:\n{description}"
@@ -154,7 +160,11 @@ def classify_llm(title, description, canton, municipality):
         raw = data["choices"][0]["message"]["content"]
         raw = re.sub(r"```json|```", "", raw).strip()
         parsed = json.loads(raw)
-    except Exception:
+    except Exception as exc:
+        LLM_FAILURES.append(f"{municipality}: {exc}")
+        if len(LLM_FAILURES) <= 3:
+            detail = exc.read().decode("utf-8", "replace")[:300] if hasattr(exc, "read") else ""
+            print(f"LLM call failed ({model}): {exc} {detail}", file=sys.stderr)
         return None
 
     eligible = parsed.get("eligible", None)
@@ -204,4 +214,8 @@ def classify(listing: dict, use_llm: bool = True) -> dict:
     if use_llm and (listing.get("description") or "").strip():
         llm = classify_llm(listing.get("title", ""), listing.get("description", ""),
                            listing.get("canton", ""), listing.get("municipality", ""))
-    return combine(rules, llm)
+    det = combine(rules, llm)
+    # Records whether the model actually answered, so a failed or skipped call
+    # is retried on the next run instead of being cached as "text is silent".
+    det["llm_ok"] = llm is not None
+    return det

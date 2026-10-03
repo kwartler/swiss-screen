@@ -52,6 +52,7 @@ def upsert(cache: dict, listing: dict, det: dict, run_ts: str) -> bool:
         "snippet": det["snippet"],
         "build_type": det["build"],
         "confidence": det["confidence"],
+        "llm_ok": det.get("llm_ok", False),
         "content_hash": content_hash(listing),
         "first_seen": first_seen,
         "last_seen": run_ts,
