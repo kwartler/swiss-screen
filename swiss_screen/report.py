@@ -161,7 +161,7 @@ def card_html(row, is_new):
     {extras}
   </div>
   {snippet_html(row.get('description'), row.get('snippet'))}
-  <a class="open" href="{esc(row.get('url') or '#')}" target="_blank" rel="noopener">Open on Homegate &rarr;</a>
+  <a class="open" href="{esc(row.get('url') or '#')}" target="_blank" rel="noopener">Open listing &rarr;</a>
 </article>"""
 
 
@@ -340,7 +340,7 @@ document.querySelectorAll('.tab').forEach(function(t){
       m.bindPopup('<p class="popt">'+p.title+'</p><div class="popm">'+p.muni+pct+'</div>'+
         '<div class="popp">'+p.price+' CHF &middot; '+p.rooms+' rm</div>'+block+
         '<div style="margin-top:6px"><a href="#card-'+p.id+'" class="popm" onclick="showCard(\\''+p.id+'\\')">view card</a> &middot; '+
-        '<a href="'+p.url+'" target="_blank" rel="noopener" class="popm">Homegate</a></div>');
+        '<a href="'+p.url+'" target="_blank" rel="noopener" class="popm">open listing</a></div>');
       m.addTo(map); group.push([p.lat,p.lon]);
     });
     map.fitBounds(group,{padding:[40,40],maxZoom:11});
@@ -381,6 +381,10 @@ FOOTER = """<footer>
 </footer>"""
 
 
+SOURCE_LABELS = {"flatfox": "Flatfox listings", "apify": "Homegate listings",
+                 "mock": "sample listings"}
+
+
 def _badge_date(run_ts) -> str:
     """Format the run timestamp as a short human date, e.g. 3 Oct 2026."""
     try:
@@ -390,7 +394,8 @@ def _badge_date(run_ts) -> str:
         return str(run_ts)[:10]
 
 
-def render_report(cache: dict, cantons_swept, run_ts, processed, out_path, coords=None):
+def render_report(cache: dict, cantons_swept, run_ts, processed, out_path, coords=None,
+                  source=""):
     coords = coords or {}
     rows = [r for r in cache.values() if r.get("eligible") is True]
     rows.sort(key=lambda r: r.get("first_seen", ""), reverse=True)
@@ -461,7 +466,7 @@ def render_report(cache: dict, cantons_swept, run_ts, processed, out_path, coord
         + LEAFLET_HEAD + REPORT_CSS +
         '</head><body><div class="wrap">'
         f'<header><p class="updated">Updated <time datetime="{esc(run_ts)}">{esc(_badge_date(run_ts))}</time> &middot; refreshed monthly</p>'
-        '<p class="eyebrow">Lex Koller / Lex Weber screen &middot; Homegate</p>'
+        f'<p class="eyebrow">Lex Koller / Lex Weber screen &middot; {esc(SOURCE_LABELS.get(source, "listings"))}</p>'
         '<h1>Foreign-Eligible Property Ledger</h1>'
         f'<p class="runmeta">Run {esc(run_ts)} &middot; cantons swept: {esc(", ".join(cantons_swept))}</p></header>'
         + metrics + tabs + map_panel + list_panel + rental_panel + FOOTER +

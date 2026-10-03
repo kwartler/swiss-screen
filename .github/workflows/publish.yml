@@ -14,12 +14,12 @@ on:
       source:
         description: "Data source"
         type: choice
-        options: [mock, apify]
-        default: mock
+        options: [flatfox, mock, apify]
+        default: flatfox
       all_cantons:
         description: "Sweep all target cantons in one run"
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: write   # commit the refreshed cache and coordinates
@@ -40,26 +40,27 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Pick the source: the manual input when present, otherwise apify if a
-      # token secret exists, otherwise the offline mock so the site still builds.
+      # Pick the source: the manual input when present, otherwise Flatfox (free
+      # public API). Scheduled runs always sweep every canton.
       - name: Resolve source
         id: src
         run: |
           SRC="${{ github.event.inputs.source }}"
-          if [ -z "$SRC" ]; then
-            if [ -n "${{ secrets.APIFY_TOKEN }}" ]; then SRC="apify"; else SRC="mock"; fi
-          fi
+          ALL="${{ github.event.inputs.all_cantons }}"
+          if [ -z "$SRC" ]; then SRC="flatfox"; ALL="true"; fi
           echo "source=$SRC" >> "$GITHUB_OUTPUT"
-          echo "Using source: $SRC"
+          echo "all=$ALL" >> "$GITHUB_OUTPUT"
+          echo "Using source: $SRC, all cantons: $ALL"
 
       - name: Run screen
+        timeout-minutes: 60
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
         run: |
           ALL=""
-          if [ "${{ github.event.inputs.all_cantons }}" = "true" ]; then ALL="--all-cantons"; fi
+          if [ "${{ steps.src.outputs.all }}" = "true" ]; then ALL="--all-cantons"; fi
           python -m swiss_screen.pipeline --source "${{ steps.src.outputs.source }}" $ALL
 
       - name: Commit refreshed cache, coordinates and site

@@ -1,9 +1,23 @@
 # Swiss foreign-eligible property screen
 
-Screens Swiss resort listings for the ones a non-resident foreigner may buy as a
+Screens Swiss property listings for the ones a non-resident foreigner may buy as a
 holiday home under Lex Koller and the Second Homes Act, then publishes a map and
-a sortable list as a static web page. A GitHub Action runs it on a schedule and
+a sortable list as a static web page. A GitHub Action runs it monthly and
 deploys to GitHub Pages.
+
+## Data source
+
+Live listings come from the public [Flatfox](https://flatfox.ch) API: free, no
+key, no scraping. The API has no sale or canton filter, so each run pages the
+full feed (about 360 pages, roughly 10 minutes) and keeps apartment and house
+sales. Flatfox often omits the canton, so each listing is placed by postcode
+through the official swisstopo directory (`data/postcodes.csv`), which also
+maps villages to their political commune (Verbier to Val de Bagnes).
+
+Flatfox is smaller than Homegate, so coverage is a real but partial slice of the
+market, thinnest in Graubuenden. Homegate, ImmoScout24, Newhome and Comparis all
+sit behind bot protection that blocks automated requests; the old Apify Homegate
+source is kept (`--source apify`) but only works with Apify residential proxies.
 
 ## What it produces
 
@@ -37,12 +51,14 @@ case, are closed to non-resident buyers entirely).
 ## Run locally
 
     pip install -r requirements.txt
-    python -m swiss_screen.pipeline --source mock --all-cantons --no-llm
+    python -m swiss_screen.pipeline --source mock --all-cantons --no-llm      # offline sample
+    python -m swiss_screen.pipeline --source flatfox --all-cantons           # live
     # open site/index.html
 
-Flags: `--source mock|apify`, `--cantons VS,VD`, `--all-cantons`, `--no-llm`,
-`--no-geocode`. Set `OPENROUTER_API_KEY` to turn on the Sonnet tier,
-`APIFY_TOKEN` to use the live source.
+Flags: `--source mock|flatfox|apify`, `--cantons VS,VD`, `--all-cantons`,
+`--no-llm`, `--no-geocode`. Set `OPENROUTER_API_KEY` to turn on the Sonnet tier.
+Mock runs use their own cache (`data/cache_mock.json`, gitignored) so sample
+listings never reach the live site.
 
 ## Put it on GitHub
 
@@ -58,13 +74,14 @@ Flags: `--source mock|apify`, `--cantons VS,VD`, `--all-cantons`, `--no-llm`,
 
 3. In the repo: Settings, Pages, set Source to "GitHub Actions".
 4. Optional secrets (Settings, Secrets and variables, Actions):
-   - `APIFY_TOKEN` to pull live Homegate data. Without it the Action builds from
-     the bundled sample so the site still deploys.
    - `OPENROUTER_API_KEY` to run the LLM tier. Optional variable
-     `OPENROUTER_MODEL` to pin a model.
+     `OPENROUTER_MODEL` to pin a model. Only new or changed listings are sent
+     to the model, so after the first run each month costs little.
+   - `APIFY_TOKEN` only if you use the Homegate source.
 5. The workflow runs monthly (03:17 UTC on the 1st) or on demand from the Actions tab
-   (Run workflow, choose source and whether to sweep all cantons). It commits
-   the refreshed cache and coordinates back, which also keeps the schedule alive.
+   (Run workflow; Flatfox and all cantons are the defaults). It commits the
+   refreshed cache, coordinates and site back; the site's Updated badge changes
+   every run, so every run commits, which keeps the schedule alive.
 
 ## Coordinates
 
@@ -78,6 +95,8 @@ geocoded at most once. Local mock runs skip geocoding and use the seed.
 - `data/communes.csv`: real ARE Wohnungsinventar (31 March 2026), all 17
   eligible cantons, 1,420 communes. Regenerate yearly with
   `python build_communes.py` against the new `ZWG_<year>_Q1.xlsx`.
+- `data/postcodes.csv`: swisstopo postcode directory (postcode and locality to
+  political commune and canton). Refresh with `python build_postcodes.py`.
 - `data/villages.csv`: village to political commune map (Wengen to Lauterbrunnen,
   etc.). Curated for VS/GR/VD/BE; extend for other cantons as needed.
 - `data/tourist_excluded.csv`: communes closed to non-resident foreign buyers
@@ -90,8 +109,11 @@ geocoded at most once. Local mock runs skip geocoding and use the seed.
 - The commune second-home gate covers all 17 cantons. The village map and
   tourist lists are curated only for VS/GR/VD/BE; elsewhere a village resolves to
   its own name and the tourist gate reads "verify".
+- Flatfox coverage is partial (see Data source). The pipeline warns on an empty
+  live sweep, which signals a broken feed rather than an empty market.
+- Few listings state foreign eligibility outright, so most verdicts come from
+  the LLM tier; without `OPENROUTER_API_KEY` the eligible set will be small.
 - The Apify source is a third-party scraper (gray area; confirm Homegate's Terms
-  before relying on it). It is not a stable contract and can break when the site
-  changes; the pipeline warns on an empty live sweep.
+  before relying on it) and is blocked without residential proxies.
 - This surfaces candidates and explains why each qualifies. It does not replace a
   Swiss notary. Confirm any single purchase, and its permit path, with one.

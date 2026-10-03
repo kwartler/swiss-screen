@@ -15,8 +15,12 @@ scheduled GitHub Action.
 
 - Build the site: `python -m swiss_screen.pipeline --source mock --all-cantons --no-llm`
   writes `site/index.html` and `site/foreign_eligible_listings.csv`.
-- Flags: `--source mock|apify`, `--cantons VS,VD`, `--all-cantons`, `--chunks N`,
+- Flags: `--source mock|flatfox|apify`, `--cantons VS,VD`, `--all-cantons`, `--chunks N`,
   `--no-llm`, `--no-geocode`, `--cache`, `--out`, `--csv`.
+- Live data: `--source flatfox` pages the public Flatfox API (no key, about 10
+  minutes for the full feed). Mock runs use `data/cache_mock.json`; live runs use
+  `data/cache.json`, which the Action commits.
+- Refresh the postcode directory: `python build_postcodes.py`.
 - Regenerate commune data from a new ARE workbook: `python build_communes.py
   [path/to/ZWG_<year>_Q1.xlsx]` (defaults to `data/ZWG_2026_Q1.xlsx`).
 - There is no test suite yet. Before considering a change done, run the mock
@@ -91,8 +95,10 @@ scheduled GitHub Action.
 
 ## Constraints
 
+- Flatfox is the default live source: a free public API, but a partial slice of
+  the market. Homegate and the other big portals block automated requests.
 - Apify is a paid third-party scraper of Homegate, roughly CHF 1.80 per 1,000
-  results, and is not a stable contract: it can break when the site changes.
+  results, not a stable contract, and blocked without residential proxies.
 - The sweep is intentionally small (1 to 3.5 rooms, under CHF 850k, under
   200 m2, BUY), hundreds of listings across all 17 cantons, not millions.
 

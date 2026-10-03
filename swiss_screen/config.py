@@ -143,6 +143,27 @@ FROZEN_FALLBACK = {
 # Resolution helpers
 # ---------------------------------------------------------------------------
 
+@lru_cache(maxsize=1)
+def _load_postcodes():
+    """(postcode, locality key) -> (commune, canton), plus a per-postcode
+    fallback holding the commune with the largest address share."""
+    exact, by_plz = {}, {}
+    for r in _read_csv("postcodes.csv"):
+        entry = (r["commune"], r["canton"])
+        exact[(r["postcode"], ckey(r["locality"]))] = entry
+        share = float(r.get("share") or 0)
+        if r["postcode"] not in by_plz or share > by_plz[r["postcode"]][0]:
+            by_plz[r["postcode"]] = (share, entry)
+    return exact, {k: v[1] for k, v in by_plz.items()}
+
+
+def locate_postcode(postcode, locality=""):
+    """Political commune and canton for a Swiss postcode, or ("", "")."""
+    exact, by_plz = _load_postcodes()
+    plz = str(postcode or "").strip()
+    return exact.get((plz, ckey(locality))) or by_plz.get(plz) or ("", "")
+
+
 def resolve_commune(muni: str) -> str:
     """Map a village name to its political commune, or return it unchanged."""
     return VILLAGE_MAP.get(ckey(muni), muni)
