@@ -1,13 +1,14 @@
 name: screen-and-publish
 
-# Runs the screen on a schedule, commits the updated cache and coordinates back
-# to the repo (which also keeps the scheduled workflow from being disabled after
-# 60 days of inactivity), and publishes the report to GitHub Pages.
+# Runs the screen monthly, commits the updated cache, coordinates and site back
+# to the repo (the site always changes via its Updated badge, so every run
+# commits, which keeps the schedule from being disabled after 60 days of
+# inactivity), and publishes the report to GitHub Pages.
 
 on:
   schedule:
-    # 03:17 UTC daily. Early and off the hour, a courteous footprint.
-    - cron: "17 3 * * *"
+    # 03:17 UTC on the 1st of each month. Early and off the hour.
+    - cron: "17 3 1 * *"
   workflow_dispatch:
     inputs:
       source:
@@ -61,15 +62,15 @@ jobs:
           if [ "${{ github.event.inputs.all_cantons }}" = "true" ]; then ALL="--all-cantons"; fi
           python -m swiss_screen.pipeline --source "${{ steps.src.outputs.source }}" $ALL
 
-      - name: Commit refreshed cache and coordinates
+      - name: Commit refreshed cache, coordinates and site
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/cache.json data/commune_coords.csv
+          git add data/cache.json data/commune_coords.csv site
           if git diff --cached --quiet; then
             echo "No cache changes to commit."
           else
-            git commit -m "chore: refresh cache and coordinates [skip ci]"
+            git commit -m "chore: monthly refresh of cache, coordinates and site [skip ci]"
             git push
           fi
 

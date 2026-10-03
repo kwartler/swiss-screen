@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import html
 import json
+from datetime import datetime
 
 from .config import commune_status, is_tourist, resale_hold_years, FILTERS
 from .geocode import coords_for
@@ -227,6 +228,8 @@ a{color:var(--teal-deep)}
 header{border-bottom:2px solid var(--ink);padding-bottom:18px}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-deep);margin:0 0 10px}
 h1{font-family:var(--disp);font-weight:600;font-size:32px;letter-spacing:-.01em;margin:0}
+.updated{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--pine);background:#E6F2EC;border:1px solid #BFDCCD;border-radius:999px;padding:4px 11px;margin-bottom:12px}
+.updated::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--pine)}
 .runmeta{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px}
 .metrics{display:flex;gap:26px;margin:20px 0 4px;flex-wrap:wrap}
 .metric{padding-right:26px;border-right:1px solid var(--line)}
@@ -378,6 +381,15 @@ FOOTER = """<footer>
 </footer>"""
 
 
+def _badge_date(run_ts) -> str:
+    """Format the run timestamp as a short human date, e.g. 3 Oct 2026."""
+    try:
+        d = datetime.fromisoformat(str(run_ts).replace("Z", "+00:00"))
+        return f"{d.day} {d:%b %Y}"
+    except ValueError:
+        return str(run_ts)[:10]
+
+
 def render_report(cache: dict, cantons_swept, run_ts, processed, out_path, coords=None):
     coords = coords or {}
     rows = [r for r in cache.values() if r.get("eligible") is True]
@@ -448,7 +460,8 @@ def render_report(cache: dict, cantons_swept, run_ts, processed, out_path, coord
         '<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">'
         + LEAFLET_HEAD + REPORT_CSS +
         '</head><body><div class="wrap">'
-        '<header><p class="eyebrow">Lex Koller / Lex Weber screen &middot; Homegate</p>'
+        f'<header><p class="updated">Updated <time datetime="{esc(run_ts)}">{esc(_badge_date(run_ts))}</time> &middot; refreshed monthly</p>'
+        '<p class="eyebrow">Lex Koller / Lex Weber screen &middot; Homegate</p>'
         '<h1>Foreign-Eligible Property Ledger</h1>'
         f'<p class="runmeta">Run {esc(run_ts)} &middot; cantons swept: {esc(", ".join(cantons_swept))}</p></header>'
         + metrics + tabs + map_panel + list_panel + rental_panel + FOOTER +

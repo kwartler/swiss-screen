@@ -62,7 +62,7 @@ Flags: `--source mock|apify`, `--cantons VS,VD`, `--all-cantons`, `--no-llm`,
      the bundled sample so the site still deploys.
    - `OPENROUTER_API_KEY` to run the LLM tier. Optional variable
      `OPENROUTER_MODEL` to pin a model.
-5. The workflow runs nightly (03:17 UTC) or on demand from the Actions tab
+5. The workflow runs monthly (03:17 UTC on the 1st) or on demand from the Actions tab
    (Run workflow, choose source and whether to sweep all cantons). It commits
    the refreshed cache and coordinates back, which also keeps the schedule alive.
 
