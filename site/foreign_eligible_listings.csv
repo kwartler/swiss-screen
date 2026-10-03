@@ -1,9 +1,2 @@
 listing_id,canton,municipality,postal_code,price_chf,rooms,living_area_m2,year_built,build_type,method,align,confidence,url,title
-hg-be-6007,BE,Wengen,3823,690000,2.5,58,2024,new_primary,rule,,0.95,https://www.homegate.ch/buy/hg-be-6007,Neubau 2.5-Zimmer im autofreien Wengen
-hg-gr-7044,GR,St. Moritz,7500,795000,2.5,55,2023,new_managed,rule,,0.95,https://www.homegate.ch/buy/hg-gr-7044,Neubau: touristisch bewirtschaftete Wohnung
-hg-gr-7080,GR,Davos,7260,760000,3.5,240,1975,existing,rule,,0.95,https://www.homegate.ch/buy/hg-gr-7080,Grosszuegige 3.5-Zimmer-Maisonette
-hg-vd-5102,VD,Villars-sur-Ollon,1884,820000,3.5,84,2016,existing,rule,,0.95,https://www.homegate.ch/buy/hg-vd-5102,Appartement 3.5 pieces proche des pistes
-hg-vs-4011,VS,Leukerbad,3954,415000,2.5,62,1998,existing,rule,,0.95,https://www.homegate.ch/buy/hg-vs-4011,Sonnige 2.5-Zimmer-Wohnung mit Bergsicht
-hg-vs-4028,VS,Saas-Fee,3906,640000,3.5,78,2005,existing,rule,,0.95,https://www.homegate.ch/buy/hg-vs-4028,3.5-Zimmer-Wohnung im Gletscherdorf
-hg-vs-4120,VS,Nendaz,1997,560000,3.5,80,2011,existing,rule,,0.95,https://www.homegate.ch/buy/hg-vs-4120,"Resale 3.5-room apartment, 4 Vallees"
-hg-vs-9001,VS,Zermatt,3920,830000,2.5,55,1990,existing,rule,,0.95,https://www.homegate.ch/buy/hg-vs-9001,2.5-Zimmer-Wohnung mit Matterhornblick
+ff-86405436,VS,Crans-Montana,3963,247000,1.0,17,,unknown,rule,,0.95,https://flatfox.ch/en/flat/auf-anfrage-3963-crans-montana/86405436/,FORTE D'INVESTISSEMENT AVEC ESPACE BIEN-ÊTRE
