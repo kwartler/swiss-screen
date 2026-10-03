@@ -87,7 +87,11 @@ def fetch_apify(canton: str):
     except Exception as exc:
         raise RuntimeError(f"Apify fetch failed for {canton}: {exc}") from exc
     if not isinstance(items, list):
+        print(f"[{canton}] Apify returned non-list response: {json.dumps(items)[:500]}")
         return
+    print(f"[{canton}] Apify returned {len(items)} raw items")
+    if items:
+        print(f"[{canton}] sample item: {json.dumps(items[0], ensure_ascii=False)[:800]}")
     for item in items:
         if str(item.get("offerType", "BUY")).upper() == "RENT":
             continue
