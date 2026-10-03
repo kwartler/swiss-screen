@@ -1,0 +1,2 @@
+# Pure standard library plus openpyxl for the ARE workbook converter.
+openpyxl>=3.1

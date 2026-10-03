@@ -1,0 +1,89 @@
+name: screen-and-publish
+
+# Runs the screen on a schedule, commits the updated cache and coordinates back
+# to the repo (which also keeps the scheduled workflow from being disabled after
+# 60 days of inactivity), and publishes the report to GitHub Pages.
+
+on:
+  schedule:
+    # 03:17 UTC daily. Early and off the hour, a courteous footprint.
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Data source"
+        type: choice
+        options: [mock, apify]
+        default: mock
+      all_cantons:
+        description: "Sweep all target cantons in one run"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # commit the refreshed cache and coordinates
+  pages: write      # deploy to Pages
+  id-token: write   # Pages OIDC
+
+concurrency:
+  group: screen-and-publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Pick the source: the manual input when present, otherwise apify if a
+      # token secret exists, otherwise the offline mock so the site still builds.
+      - name: Resolve source
+        id: src
+        run: |
+          SRC="${{ github.event.inputs.source }}"
+          if [ -z "$SRC" ]; then
+            if [ -n "${{ secrets.APIFY_TOKEN }}" ]; then SRC="apify"; else SRC="mock"; fi
+          fi
+          echo "source=$SRC" >> "$GITHUB_OUTPUT"
+          echo "Using source: $SRC"
+
+      - name: Run screen
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+        run: |
+          ALL=""
+          if [ "${{ github.event.inputs.all_cantons }}" = "true" ]; then ALL="--all-cantons"; fi
+          python -m swiss_screen.pipeline --source "${{ steps.src.outputs.source }}" $ALL
+
+      - name: Commit refreshed cache and coordinates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/cache.json data/commune_coords.csv
+          if git diff --cached --quiet; then
+            echo "No cache changes to commit."
+          else
+            git commit -m "chore: refresh cache and coordinates [skip ci]"
+            git push
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
