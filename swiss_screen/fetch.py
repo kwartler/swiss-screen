@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
 import urllib.request
 
 from .config import ALLOWED_CANTONS, FILTERS, DATA_DIR, passes_bounds
@@ -71,11 +72,18 @@ def fetch_apify(canton: str):
             "apifyProxyCountry": "CH",
         },
     }).encode("utf-8")
-    url = APIFY_ENDPOINT.format(actor=actor) + f"?token={token}&timeout=300"
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+    url = APIFY_ENDPOINT.format(actor=actor) + "?timeout=300"
+    req = urllib.request.Request(url, data=payload, headers={
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}",
+    })
     try:
         with urllib.request.urlopen(req, timeout=360) as resp:
             items = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        # Apify explains rejections in the body (bad token, plan limit, etc.).
+        detail = exc.read().decode("utf-8", "replace")[:500]
+        raise RuntimeError(f"Apify fetch failed for {canton}: {exc} {detail}") from exc
     except Exception as exc:
         raise RuntimeError(f"Apify fetch failed for {canton}: {exc}") from exc
     if not isinstance(items, list):
