@@ -1,2 +1,11 @@
 listing_id,canton,municipality,postal_code,price_chf,rooms,living_area_m2,year_built,build_type,method,align,confidence,url,title
-ff-86405436,VS,Crans-Montana,3963,247000,1.0,17,,unknown,rule,,0.95,https://flatfox.ch/en/flat/auf-anfrage-3963-crans-montana/86405436/,FORTE D'INVESTISSEMENT AVEC ESPACE BIEN-ÊTRE
+ff-85349593,VS,Saas-Grund,3910,,,,1968,existing,llm,,0.8,https://flatfox.ch/en/flat/saastalstrasse-367-3910-saas-grund/85349593/,Investitionsmöglichkeit im Herzen des Saastals - Hotel oder bewilligte Zweitwohnungen in Saas-Grund
+ff-85984795,GR,Disentis/Mustér,7180,395000,2.5,49,1981,existing,llm,,0.9,https://flatfox.ch/en/flat/7180-disentismuster/85984795/,Weg vom Alltag in die Bündner-Alpen
+ff-86175711,VS,Grächen,3925,680000,3.5,90,2026,new_unspecified,llm,,0.85,https://flatfox.ch/en/flat/egga-3925-grachen/86175711/,Sonnige Neubauwohnung mit grossem Balkon in Grächen
+ff-86175712,VS,Grächen,3925,540000,2.5,90,2026,new_unspecified,llm,,0.9,https://flatfox.ch/en/flat/egga-3925-grachen/86175712/,Sonnige Neubauwohnung mit grossem Balkon in Grächen
+ff-86295325,BE,Aeschi bei Spiez,3703,200000,1.5,27,1980,existing,llm,,0.95,https://flatfox.ch/en/flat/3703-aeschi-b-spiez/86295325/,beautiful studio apartment in a residence complex
+ff-86314910,VS,Bürchen,3935,125000,1.5,24,1973,existing,llm,,0.8,https://flatfox.ch/en/flat/3935-burchen/86314910/,Ein Studio mit Aussicht auf mehr
+ff-86327619,VS,Gampel-Bratsch,3945,245000,3.5,45,1986,existing,llm,,0.8,https://flatfox.ch/en/flat/3945-gampel/86327619/,"Jeizinen - Wohnen, wo Ruhe, Aussicht und Berggefühl zusammenfinden"
+ff-86351874,TI,Lugano,6951,350000,2.5,55,,existing,llm,,0.6,https://flatfox.ch/en/flat/auf-anfrage-6951-signora/86351874/,PACE E VISTA SULLA VALLE
+ff-86405436,VS,Crans-Montana,3963,247000,1.0,17,,existing,both,True,0.95,https://flatfox.ch/en/flat/auf-anfrage-3963-crans-montana/86405436/,FORTE D'INVESTISSEMENT AVEC ESPACE BIEN-ÊTRE
+ff-86406629,VS,Hérémence,1987,760000,3.5,87,2025,new_managed,llm,,0.85,https://flatfox.ch/en/flat/route-des-masses-83-1987-heremence/86406629/,Attique 3.5 pièces ski-in/ski-out au coeur des 4 Vallées
