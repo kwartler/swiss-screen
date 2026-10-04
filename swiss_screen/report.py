@@ -125,42 +125,42 @@ def align_badge(row):
     return ('b-rust', "rule vs LLM conflict")
 
 
+def warnings(row):
+    """Only the problems that would stop a purchase, in plain words."""
+    muni = row.get("municipality", "")
+    out = []
+    if is_tourist(muni) is False:
+        out.append("This commune is closed to non-resident foreign buyers.")
+    if commune_status(muni)["status"] == "frozen" and row.get("build_type") == BUILD_NEW_PRIMARY:
+        out.append("New build in a commune over 20% second homes: not buyable as a holiday home.")
+    if row.get("method") == "llm" and (row.get("confidence") or 0) < 0.6:
+        out.append("Low confidence: check the listing wording.")
+    return out
+
+
 def card_html(row, is_new):
-    build = row.get("build_type", BUILD_UNKNOWN)
-    bcls, blabel = BUILD_META.get(build, BUILD_META[BUILD_UNKNOWN])
-    if row.get("method") == "rule":
-        mcls, mlabel = "b-rule", "matched: rule"
-    else:
-        conf = round((row.get("confidence") or 0) * 100)
-        mcls, mlabel = "b-llm", f"llm {conf}%"
-    acls, albl = align_badge(row)
-    postal = f' &middot; {esc(row.get("postal_code"))}' if row.get("postal_code") else ""
-    extras = "".join(f'<span class="badge {c}">{esc(t)}</span>' for c, t in extra_badges(row))
-    yb = row.get("year_built")
     lid = row.get("listing_id", "")
-    return f"""<article class="card s-{build}{' is-new' if is_new else ''}" data-canton="{esc(row.get('canton'))}" id="card-{esc(lid)}">
+    facts = []
+    if row.get("rooms"):
+        facts.append(f"{num_fmt(row.get('rooms'))} rooms")
+    if row.get("living_area_m2"):
+        facts.append(f"{num_fmt(row.get('living_area_m2'))} m&sup2;")
+    if row.get("year_built"):
+        facts.append(f"built {row.get('year_built')}")
+    price = row.get("price_chf")
+    price_html = f"CHF {price_fmt(price)}" if price else "Price on request"
+    quote = (f'<blockquote class="quote">&ldquo;{esc(row.get("snippet"))}&rdquo;</blockquote>'
+             if row.get("snippet") else "")
+    warn = "".join(f'<p class="warn">{esc(w)}</p>' for w in warnings(row))
+    return f"""<article class="card{' is-new' if is_new else ''}" data-canton="{esc(row.get('canton'))}" id="card-{esc(lid)}">
   <div class="top">
     <div>
       <p class="ptitle">{esc(row.get('title') or 'Untitled listing')}</p>
-      <div class="loc">{esc(row.get('municipality'))}, {esc(row.get('canton'))}{postal}</div>
+      <div class="loc">{esc(row.get('municipality'))}, {esc(row.get('canton'))}{' &middot; ' + ' &middot; '.join(facts) if facts else ''}</div>
     </div>
-    <div class="price">{price_fmt(row.get('price_chf'))}<small>CHF</small></div>
+    <div class="price">{price_html}</div>
   </div>
-  <div class="facts">
-    <span>rooms</span> <b>{num_fmt(row.get('rooms'))}</b>
-    <span>living</span> <b>{num_fmt(row.get('living_area_m2'), ' m2')}</b>
-    <span>built</span> <b>{yb if yb else 'n/a'}</b>
-    <span>id</span> <b>{esc(lid)}</b>
-    <span>first seen</span> <b>{esc((row.get('first_seen') or '')[:10])}</b>
-  </div>
-  <div class="badges">
-    <span class="badge b-flag">foreign-eligible</span>
-    <span class="badge {mcls}">{mlabel}</span>
-    <span class="badge {acls}">{albl}</span>
-    <span class="badge {bcls}">{blabel}</span>
-    {extras}
-  </div>
-  {snippet_html(row.get('description'), row.get('snippet'))}
+  {quote}{warn}
   <a class="open" href="{esc(row.get('url') or '#')}" target="_blank" rel="noopener">Open listing &rarr;</a>
 </article>"""
 
@@ -263,18 +263,17 @@ border-bottom:2px solid transparent;padding:10px 16px;margin-bottom:-1px;cursor:
 .export{font-family:var(--mono);font-size:12px;font-weight:500;text-decoration:none;color:var(--paper);background:var(--teal-deep);padding:7px 13px;border-radius:8px;border:none;cursor:pointer}
 .export:hover{background:var(--ink)}
 /* cards */
-.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px 18px 26px;margin-bottom:14px;overflow:hidden;box-shadow:0 8px 24px rgba(22,33,31,.05);scroll-margin-top:16px}
-.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--muted)}
-.card.s-existing::before{background:var(--pine)}
-.card.s-new_managed::before,.card.s-new_unspecified::before{background:var(--amber)}
-.card.s-new_primary::before{background:var(--rust)}
-.card.is-new{box-shadow:0 0 0 2px var(--teal),0 8px 24px rgba(22,33,31,.05)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:12px;scroll-margin-top:16px}
+.card.is-new{border-color:var(--teal)}
 .card.flash{animation:flash 1.4s ease}
 @keyframes flash{0%{box-shadow:0 0 0 3px var(--teal)}100%{box-shadow:0 8px 24px rgba(22,33,31,.05)}}
 .top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
 .ptitle{font-family:var(--disp);font-weight:600;font-size:18px;margin:0 0 4px}
 .loc{font-family:var(--mono);font-size:12px;color:var(--muted)}
-.price{font-family:var(--mono);font-weight:600;font-size:22px;white-space:nowrap;text-align:right}
+.price{font-family:var(--mono);font-weight:600;font-size:20px;white-space:nowrap;text-align:right}
+.quote{margin:12px 0 4px;padding:0 0 0 12px;border-left:3px solid var(--teal);font-size:14.5px;color:var(--ink)}
+.warn{margin:8px 0 0;font-size:13px;color:var(--rust)}
+.summary{color:var(--muted);margin:8px 0 0;font-size:15px}
 .price small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
 .facts{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0;font-family:var(--mono);font-size:13px}
 .facts span{color:var(--muted)}
@@ -291,7 +290,7 @@ border-bottom:2px solid transparent;padding:10px 16px;margin-bottom:-1px;cursor:
 .b-agree{background:#e7f2ee;color:var(--pine);border-color:#c9e4db}
 .snip{border-left:2px solid var(--line);padding:2px 0 2px 12px;margin:10px 0;color:var(--muted);font-size:13.5px;font-style:italic}
 .snip b{font-style:normal;color:var(--ink);background:#f0f4d8;padding:0 2px}
-.open{display:inline-block;font-family:var(--mono);font-size:12px;text-decoration:none;color:var(--paper);background:var(--teal-deep);padding:8px 14px;border-radius:8px;margin-top:4px}
+.open{display:inline-block;margin-top:12px!important;font-family:var(--mono);font-size:12px;text-decoration:none;color:var(--paper);background:var(--teal-deep);padding:8px 14px;border-radius:8px;margin-top:4px}
 .seclabel{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:30px 0 14px}
 .empty{font-family:var(--mono);font-size:13px;color:var(--muted);padding:40px 20px;border:1px dashed var(--line);border-radius:10px;text-align:center}
 footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
@@ -376,8 +375,7 @@ if(btn){btn.addEventListener('click',function(){
 
 
 FOOTER = """<footer>
-<p>Map markers and card spines share one color: green existing or resale (freely buyable), amber managed rental or unstated new build, rust new build primary residence (off limits), grey marker a commune closed to non-resident foreign buyers. A teal card outline means new since the previous run.</p>
-<p>Both detectors read the listing text. The eligible set is the superset (either flags it); the alignment badge shows whether the rule matcher and the model agreed. Commune second-home status comes from the ARE Wohnungsinventar; the tourist-location gate is cantonal. Absence of an eligibility phrase is not proof of ineligibility. Confirm any listing with a Swiss notary.</p>
+<p>Each listing is included because its own text says a non-resident foreigner may buy; the quote shows the wording. Map pin colors: green resale, amber managed rental or unstated new build, rust new primary residence, grey closed to foreign buyers. Always confirm with a Swiss notary.</p>
 </footer>"""
 
 
@@ -400,60 +398,27 @@ def render_report(cache: dict, cantons_swept, run_ts, processed, out_path, coord
     rows = [r for r in cache.values() if r.get("eligible") is True]
     rows.sort(key=lambda r: r.get("first_seen", ""), reverse=True)
 
-    cards, new_cards = [], []
-    for r in rows:
-        is_new = r.get("first_seen") == run_ts
-        c = card_html(r, is_new)
-        cards.append(c)
-        if is_new:
-            new_cards.append(c)
-    show_new = 0 < len(new_cards) != len(cards)
+    cards = [card_html(r, r.get("first_seen") == run_ts) for r in rows]
 
     cantons_present = sorted({r.get("canton", "") for r in rows if r.get("canton")})
-    chips = (
-        '<span class="chip" data-filter="new" aria-pressed="false">New only</span>'
-        '<span class="chip" data-filter="existing" aria-pressed="false">Resale only</span>'
-        + "".join(f'<span class="chip" data-canton="{esc(c)}" aria-pressed="false">{esc(c)}</span>'
-                  for c in cantons_present)
-    )
+    chips = "".join(f'<span class="chip" data-canton="{esc(c)}" aria-pressed="false">{esc(c)}</span>'
+                    for c in cantons_present)
 
-    metrics = (
-        '<div class="metrics">'
-        f'<div class="metric"><div class="n">{len(cache)}</div><div class="l">Tracked</div></div>'
-        f'<div class="metric hot"><div class="n">{len(rows)}</div><div class="l">Foreign-eligible</div></div>'
-        f'<div class="metric"><div class="n">{len(new_cards)}</div><div class="l">New this run</div></div>'
-        f'<div class="metric"><div class="n">{processed}</div><div class="l">Scanned this run</div></div>'
-        '</div>'
-    )
-
-    body_cards = "\n".join(cards) if cards else '<div class="empty">No eligible listings cached yet. Run a sweep against a live source to populate the ledger.</div>'
-    new_section = ('<div class="seclabel">New since last run</div>' + "\n".join(new_cards)) if show_new else ""
-
-    n_mapped = len(_map_points(rows, coords))
-    maphint = (f'<p class="maphint">{n_mapped} of {len(rows)} listings placed by commune centroid. '
-               'Markers in the same commune are nudged apart. Grey means closed to non-resident foreign buyers.</p>')
-
-    map_panel = f'<section id="panel-map" class="panel active"><div id="map"></div>{maphint}</section>'
+    body_cards = "\n".join(cards) if cards else '<div class="empty">No eligible listings yet.</div>'
+    map_panel = '<section id="panel-map" class="panel active"><div id="map"></div></section>'
     list_panel = (
         '<section id="panel-list" class="panel">'
         '<div class="controls" id="controls">' + chips +
         '<span class="spacer"></span><button class="export" id="exportCsv">Download CSV</button></div>'
-        + new_section +
-        '<div class="seclabel">All foreign-eligible listings</div>' + body_cards +
-        '</section>'
+        + body_cards + '</section>'
     )
-    rental_panel = (
-        '<section id="panel-rental" class="panel">'
-        '<div class="empty">Rental estimate is coming next: ADR times occupancy, net of platform and '
-        'management fees, per listing. The seam is wired; the content lands in the next round.</div>'
-        '</section>'
-    )
+    summary = (f'<p class="summary">{len(rows)} holiday homes a non-resident foreigner can buy, '
+               f'from {esc(SOURCE_LABELS.get(source, "listings"))} across {len(cantons_swept)} cantons.</p>')
 
     tabs = (
         '<div class="tabs" role="tablist">'
         '<button class="tab" role="tab" aria-selected="true" data-panel="panel-map">Map</button>'
         '<button class="tab" role="tab" aria-selected="false" data-panel="panel-list">Listings</button>'
-        '<button class="tab" role="tab" aria-selected="false" data-panel="panel-rental" data-soon="0">Rental estimate<span class="soon">soon</span></button>'
         '</div>'
     )
 
@@ -466,10 +431,8 @@ def render_report(cache: dict, cantons_swept, run_ts, processed, out_path, coord
         + LEAFLET_HEAD + REPORT_CSS +
         '</head><body><div class="wrap">'
         f'<header><p class="updated">Updated <time datetime="{esc(run_ts)}">{esc(_badge_date(run_ts))}</time> &middot; refreshed monthly</p>'
-        f'<p class="eyebrow">Lex Koller / Lex Weber screen &middot; {esc(SOURCE_LABELS.get(source, "listings"))}</p>'
-        '<h1>Foreign-Eligible Property Ledger</h1>'
-        f'<p class="runmeta">Run {esc(run_ts)} &middot; cantons swept: {esc(", ".join(cantons_swept))}</p></header>'
-        + metrics + tabs + map_panel + list_panel + rental_panel + FOOTER +
+        '<h1>Foreign-Eligible Property Ledger</h1>' + summary + '</header>'
+        + tabs + map_panel + list_panel + FOOTER +
         '</div>' + _page_js(_map_points(rows, coords), _csv_text(rows)) +
         '</body></html>'
     )
